@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import dynamic from 'next/dynamic';
 import 'react-form-builder2/dist/app.css';
@@ -87,6 +87,39 @@ const FormBuilderArea = () => {
     // Otomatik kaydetme yok, sadece state'i güncelle
   };
 
+  // Form elemanlarına edit butonu ekle
+  useEffect(() => {
+    if (!showPreview && formData.length > 0) {
+      const addEditButtons = () => {
+        const formElements = document.querySelectorAll('.rfb-item');
+
+        formElements.forEach((element, index) => {
+          // Zaten edit butonu varsa ekleme
+          if (element.querySelector('.custom-edit-btn')) return;
+
+          const editBtn = document.createElement('button');
+          editBtn.className = 'custom-edit-btn';
+          editBtn.innerHTML = '✏️';
+          editBtn.title = 'Düzenle';
+          editBtn.onclick = (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            const elementData = formData[index];
+            if (elementData) {
+              handleEditElement(elementData);
+            }
+          };
+
+          element.style.position = 'relative';
+          element.appendChild(editBtn);
+        });
+      };
+
+      // ReactFormBuilder render olduktan sonra butonları ekle
+      setTimeout(addEditButtons, 100);
+    }
+  }, [formData, showPreview]);
+
   const handleManualSave = async () => {
     if (formData.length === 0) {
       alert('Lütfen önce form elemanı ekleyin!');
@@ -143,44 +176,14 @@ const FormBuilderArea = () => {
           <p className="builder-info">
             ℹ️ <strong>Nasıl Kullanılır:</strong><br/>
             1. Sağdaki araç çubuğundan form elemanlarını sol tarafa sürükleyip bırakın<br/>
-            2. Elemanlar üzerine tıklayarak özelliklerini düzenleyin<br/>
-            3. Yukarıdaki <strong>💾 Kaydet</strong> butonuna tıklayarak MongoDB'ye kaydedin<br/>
-            4. <strong>👁️ Preview & Test</strong> sekmesine geçerek formunuzu test edin
+            2. Her elemanın sağ üstünde <strong>✏️ Düzenle</strong> butonu çıkar - tıklayın<br/>
+            3. Modal'da Label, Placeholder vs. düzenleyin<br/>
+            4. Yukarıdaki <strong>💾 Kaydet</strong> butonuna tıklayarak MongoDB'ye kaydedin<br/>
+            5. <strong>👁️ Preview & Test</strong> sekmesinde formunuzu test edin
           </p>
           <ReactFormBuilder
             onPost={handleBuilderPost}
           />
-
-          {/* Eklenen Elemanlar Listesi */}
-          {formData.length > 0 && (
-            <div className="elements-list">
-              <h4>📝 Eklenen Form Elemanları ({formData.length})</h4>
-              <p className="list-info">Düzenlemek için tıklayın:</p>
-              {formData.map((element, index) => (
-                <div
-                  key={element.id || index}
-                  className="element-item"
-                  onClick={() => handleEditElement(element)}
-                >
-                  <div className="element-icon">
-                    {element.element === 'TextInput' && '📝'}
-                    {element.element === 'TextArea' && '📄'}
-                    {element.element === 'Dropdown' && '📋'}
-                    {element.element === 'Checkboxes' && '☑️'}
-                    {element.element === 'RadioButtons' && '🔘'}
-                    {element.element === 'Header' && '📌'}
-                  </div>
-                  <div className="element-details">
-                    <strong>{element.label || element.text || 'İsimsiz Element'}</strong>
-                    <small>{element.element}</small>
-                  </div>
-                  <div className="element-actions">
-                    ✏️
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
         </div>
       )}
 
@@ -395,68 +398,35 @@ const FormBuilderArea = () => {
           color: #856404;
         }
 
-        .elements-list {
-          margin-top: 30px;
-          padding: 20px;
-          background: #f8f9fa;
-          border-radius: 8px;
-          border: 2px dashed #dee2e6;
-        }
-
-        .elements-list h4 {
-          margin: 0 0 10px 0;
-          color: #333;
-        }
-
-        .elements-list .list-info {
-          margin: 0 0 15px 0;
-          color: #666;
-          font-size: 14px;
-        }
-
-        .element-item {
-          background: white;
-          padding: 15px;
-          margin-bottom: 10px;
-          border-radius: 6px;
-          border: 2px solid #dee2e6;
+        /* Custom Edit Button on Form Elements */
+        :global(.custom-edit-btn) {
+          position: absolute;
+          top: 5px;
+          right: 5px;
+          background: #007bff;
+          color: white;
+          border: none;
+          border-radius: 4px;
+          width: 32px;
+          height: 32px;
           display: flex;
           align-items: center;
-          gap: 15px;
+          justify-content: center;
           cursor: pointer;
+          font-size: 16px;
+          z-index: 100;
+          box-shadow: 0 2px 4px rgba(0,0,0,0.2);
           transition: all 0.2s;
         }
 
-        .element-item:hover {
-          border-color: #007bff;
-          box-shadow: 0 2px 8px rgba(0, 123, 255, 0.2);
-          transform: translateY(-2px);
+        :global(.custom-edit-btn:hover) {
+          background: #0056b3;
+          transform: scale(1.1);
+          box-shadow: 0 3px 6px rgba(0,0,0,0.3);
         }
 
-        .element-icon {
-          font-size: 24px;
-        }
-
-        .element-details {
-          flex: 1;
-          display: flex;
-          flex-direction: column;
-          gap: 4px;
-        }
-
-        .element-details strong {
-          color: #333;
-          font-size: 16px;
-        }
-
-        .element-details small {
-          color: #666;
-          font-size: 13px;
-        }
-
-        .element-actions {
-          font-size: 20px;
-          color: #007bff;
+        :global(.rfb-item) {
+          position: relative;
         }
 
         .preview-section {
