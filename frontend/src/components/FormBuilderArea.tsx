@@ -8,15 +8,25 @@ import 'react-form-builder2/dist/app.css';
 // KRİTİK DÜZELTME: Next.js SSR hatasını önlemek için Dynamic Import
 const ReactFormBuilder = dynamic(
   () => import('react-form-builder2').then((mod) => mod.ReactFormBuilder),
-  { 
+  {
     ssr: false, // Sunucuda çalıştırma, sadece tarayıcıda çalıştır
     loading: () => <div className="p-5 text-center">Form Yükleniyor...</div>
+  }
+);
+
+const ReactFormGenerator = dynamic(
+  () => import('react-form-builder2').then((mod) => mod.ReactFormGenerator),
+  {
+    ssr: false,
+    loading: () => <div className="p-5 text-center">Preview Yükleniyor...</div>
   }
 );
 
 const FormBuilderArea = () => {
   const [formTitle, setFormTitle] = useState('My Form');
   const [isSaving, setIsSaving] = useState(false);
+  const [formData, setFormData] = useState<any[]>([]);
+  const [showPreview, setShowPreview] = useState(false);
 
   const handleSave = async (data: any) => {
     setIsSaving(true);
@@ -33,8 +43,8 @@ const FormBuilderArea = () => {
       const response = await axios.post('http://localhost:5000/api/forms', payload);
 
       // Backend direkt oluşturulan objeyi (ve _id'sini) döner
-      if (response.status === 201 || response.data._id) {
-        alert(`Form başarıyla kaydedildi! ID: ${response.data._id}`);
+      if (response.status === 201 || response.data.data?._id) {
+        alert(`Form başarıyla kaydedildi! ID: ${response.data.data._id}`);
         console.log('Saved form:', response.data);
       } else {
         alert('Form kaydedilemedi.');
@@ -46,6 +56,11 @@ const FormBuilderArea = () => {
     } finally {
       setIsSaving(false);
     }
+  };
+
+  const handleFormChange = (data: any) => {
+    // Form her değiştiğinde data'yı sakla
+    setFormData(data);
   };
 
   return (
@@ -65,14 +80,67 @@ const FormBuilderArea = () => {
         </div>
       </div>
 
-      <div className="builder-section">
-        <ReactFormBuilder
-          onPost={handleSave}
-          url="" // Boş bırakıyoruz ki eski data çekmeye çalışmasın
-          saveUrl="" 
-          saveAlways={false}
-        />
+      {/* Tab Navigation */}
+      <div className="tab-navigation">
+        <button
+          className={`tab-button ${!showPreview ? 'active' : ''}`}
+          onClick={() => setShowPreview(false)}
+        >
+          📝 Form Designer
+        </button>
+        <button
+          className={`tab-button ${showPreview ? 'active' : ''}`}
+          onClick={() => setShowPreview(true)}
+        >
+          👁️ Preview & Test
+        </button>
+        <button
+          className="save-button"
+          onClick={() => handleSave({ task_data: formData })}
+          disabled={isSaving || formData.length === 0}
+        >
+          {isSaving ? '💾 Kaydediliyor...' : '💾 Save Form'}
+        </button>
       </div>
+
+      {/* Builder Section */}
+      {!showPreview && (
+        <div className="builder-section">
+          <ReactFormBuilder
+            onPost={handleSave}
+            onLoad={handleFormChange}
+            onChange={handleFormChange}
+            saveUrl=""
+            saveAlways={false}
+          />
+        </div>
+      )}
+
+      {/* Preview Section */}
+      {showPreview && (
+        <div className="preview-section">
+          {formData.length > 0 ? (
+            <>
+              <h3>Form Preview - Test Your Form</h3>
+              <p className="preview-note">
+                👉 Burada formunuzu test edebilirsiniz. Yazabilir, seçim yapabilirsiniz.
+              </p>
+              <ReactFormGenerator
+                data={formData}
+                onSubmit={(data: any) => {
+                  console.log('Form submitted with data:', data);
+                  alert('Form test edildi! Console\'a bakın.');
+                }}
+              />
+            </>
+          ) : (
+            <div className="empty-preview">
+              <p>Henüz form elemanı eklemediniz.</p>
+              <p>Form Designer sekmesine gidip sürükle-bırak ile eleman ekleyin.</p>
+            </div>
+          )}
+        </div>
+      )}
 
       {isSaving && (
         <div className="saving-indicator">
@@ -88,7 +156,7 @@ const FormBuilderArea = () => {
         }
 
         .header-section {
-          margin-bottom: 30px;
+          margin-bottom: 20px;
           padding: 20px;
           background: #f8f9fa;
           border-radius: 8px;
@@ -120,12 +188,105 @@ const FormBuilderArea = () => {
           font-size: 16px;
         }
 
+        .tab-navigation {
+          display: flex;
+          gap: 10px;
+          margin-bottom: 20px;
+          background: #f8f9fa;
+          padding: 15px;
+          border-radius: 8px;
+          border: 1px solid #dee2e6;
+        }
+
+        .tab-button {
+          flex: 1;
+          padding: 12px 20px;
+          border: 2px solid #dee2e6;
+          background: white;
+          border-radius: 6px;
+          font-size: 16px;
+          font-weight: 500;
+          cursor: pointer;
+          transition: all 0.2s;
+        }
+
+        .tab-button:hover {
+          border-color: #007bff;
+          background: #f0f8ff;
+        }
+
+        .tab-button.active {
+          background: #007bff;
+          color: white;
+          border-color: #007bff;
+        }
+
+        .save-button {
+          padding: 12px 30px;
+          background: #28a745;
+          color: white;
+          border: none;
+          border-radius: 6px;
+          font-size: 16px;
+          font-weight: 600;
+          cursor: pointer;
+          transition: all 0.2s;
+          white-space: nowrap;
+        }
+
+        .save-button:hover:not(:disabled) {
+          background: #218838;
+          transform: translateY(-1px);
+          box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+        }
+
+        .save-button:disabled {
+          background: #6c757d;
+          cursor: not-allowed;
+          opacity: 0.6;
+        }
+
         .builder-section {
           background: white;
           border-radius: 8px;
           padding: 20px;
           box-shadow: 0 4px 6px rgba(0,0,0,0.1);
           border: 1px solid #dee2e6;
+          min-height: 500px;
+        }
+
+        .preview-section {
+          background: white;
+          border-radius: 8px;
+          padding: 30px;
+          box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+          border: 1px solid #dee2e6;
+          min-height: 500px;
+        }
+
+        .preview-section h3 {
+          color: #333;
+          margin-bottom: 10px;
+        }
+
+        .preview-note {
+          background: #e7f3ff;
+          border-left: 4px solid #007bff;
+          padding: 12px;
+          margin-bottom: 25px;
+          border-radius: 4px;
+          color: #004085;
+        }
+
+        .empty-preview {
+          text-align: center;
+          padding: 60px 20px;
+          color: #6c757d;
+        }
+
+        .empty-preview p {
+          font-size: 18px;
+          margin: 10px 0;
         }
 
         .saving-indicator {
