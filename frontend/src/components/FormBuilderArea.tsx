@@ -27,7 +27,27 @@ const FormBuilderArea = () => {
   const [isSaving, setIsSaving] = useState(false);
   const [formData, setFormData] = useState<any[]>([]);
   const [showPreview, setShowPreview] = useState(false);
+  const [editingElement, setEditingElement] = useState<any>(null);
+  const [showEditModal, setShowEditModal] = useState(false);
   const formBuilderRef = React.useRef<any>(null);
+
+  // Element'i düzenlemek için modal aç
+  const handleEditElement = (element: any) => {
+    setEditingElement({ ...element });
+    setShowEditModal(true);
+  };
+
+  // Düzenlenen element'i kaydet
+  const handleSaveElement = () => {
+    if (editingElement) {
+      const updatedData = formData.map(item =>
+        item.id === editingElement.id ? editingElement : item
+      );
+      setFormData(updatedData);
+      setShowEditModal(false);
+      setEditingElement(null);
+    }
+  };
 
 
   const handleSave = async (data: any) => {
@@ -130,6 +150,37 @@ const FormBuilderArea = () => {
           <ReactFormBuilder
             onPost={handleBuilderPost}
           />
+
+          {/* Eklenen Elemanlar Listesi */}
+          {formData.length > 0 && (
+            <div className="elements-list">
+              <h4>📝 Eklenen Form Elemanları ({formData.length})</h4>
+              <p className="list-info">Düzenlemek için tıklayın:</p>
+              {formData.map((element, index) => (
+                <div
+                  key={element.id || index}
+                  className="element-item"
+                  onClick={() => handleEditElement(element)}
+                >
+                  <div className="element-icon">
+                    {element.element === 'TextInput' && '📝'}
+                    {element.element === 'TextArea' && '📄'}
+                    {element.element === 'Dropdown' && '📋'}
+                    {element.element === 'Checkboxes' && '☑️'}
+                    {element.element === 'RadioButtons' && '🔘'}
+                    {element.element === 'Header' && '📌'}
+                  </div>
+                  <div className="element-details">
+                    <strong>{element.label || element.text || 'İsimsiz Element'}</strong>
+                    <small>{element.element}</small>
+                  </div>
+                  <div className="element-actions">
+                    ✏️
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
 
@@ -162,6 +213,52 @@ const FormBuilderArea = () => {
       {isSaving && (
         <div className="saving-indicator">
           Saving form...
+        </div>
+      )}
+
+      {/* Custom Edit Modal */}
+      {showEditModal && editingElement && (
+        <div className="custom-modal-backdrop" onClick={() => setShowEditModal(false)}>
+          <div className="custom-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3>Element Özellikleri Düzenle</h3>
+              <button className="close-btn" onClick={() => setShowEditModal(false)}>×</button>
+            </div>
+            <div className="modal-body">
+              <div className="form-group">
+                <label>Label:</label>
+                <input
+                  type="text"
+                  className="form-control"
+                  value={editingElement.label || ''}
+                  onChange={(e) => setEditingElement({ ...editingElement, label: e.target.value })}
+                />
+              </div>
+              <div className="form-group">
+                <label>Placeholder:</label>
+                <input
+                  type="text"
+                  className="form-control"
+                  value={editingElement.placeholder || ''}
+                  onChange={(e) => setEditingElement({ ...editingElement, placeholder: e.target.value })}
+                />
+              </div>
+              <div className="form-group">
+                <label>
+                  <input
+                    type="checkbox"
+                    checked={editingElement.required || false}
+                    onChange={(e) => setEditingElement({ ...editingElement, required: e.target.checked })}
+                  />
+                  {' '}Zorunlu Alan
+                </label>
+              </div>
+            </div>
+            <div className="modal-footer">
+              <button className="btn btn-secondary" onClick={() => setShowEditModal(false)}>İptal</button>
+              <button className="btn btn-primary" onClick={handleSaveElement}>Kaydet</button>
+            </div>
+          </div>
         </div>
       )}
 
@@ -298,6 +395,70 @@ const FormBuilderArea = () => {
           color: #856404;
         }
 
+        .elements-list {
+          margin-top: 30px;
+          padding: 20px;
+          background: #f8f9fa;
+          border-radius: 8px;
+          border: 2px dashed #dee2e6;
+        }
+
+        .elements-list h4 {
+          margin: 0 0 10px 0;
+          color: #333;
+        }
+
+        .elements-list .list-info {
+          margin: 0 0 15px 0;
+          color: #666;
+          font-size: 14px;
+        }
+
+        .element-item {
+          background: white;
+          padding: 15px;
+          margin-bottom: 10px;
+          border-radius: 6px;
+          border: 2px solid #dee2e6;
+          display: flex;
+          align-items: center;
+          gap: 15px;
+          cursor: pointer;
+          transition: all 0.2s;
+        }
+
+        .element-item:hover {
+          border-color: #007bff;
+          box-shadow: 0 2px 8px rgba(0, 123, 255, 0.2);
+          transform: translateY(-2px);
+        }
+
+        .element-icon {
+          font-size: 24px;
+        }
+
+        .element-details {
+          flex: 1;
+          display: flex;
+          flex-direction: column;
+          gap: 4px;
+        }
+
+        .element-details strong {
+          color: #333;
+          font-size: 16px;
+        }
+
+        .element-details small {
+          color: #666;
+          font-size: 13px;
+        }
+
+        .element-actions {
+          font-size: 20px;
+          color: #007bff;
+        }
+
         .preview-section {
           background: white;
           border-radius: 8px;
@@ -349,6 +510,106 @@ const FormBuilderArea = () => {
         @keyframes slideIn {
           from { transform: translateY(100%); opacity: 0; }
           to { transform: translateY(0); opacity: 1; }
+        }
+
+        .custom-modal-backdrop {
+          position: fixed;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          background: rgba(0, 0, 0, 0.5);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          z-index: 10000;
+        }
+
+        .custom-modal {
+          background: white;
+          border-radius: 8px;
+          width: 90%;
+          max-width: 500px;
+          box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .custom-modal .modal-header {
+          padding: 20px;
+          border-bottom: 1px solid #dee2e6;
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+        }
+
+        .custom-modal .modal-header h3 {
+          margin: 0;
+          color: #333;
+        }
+
+        .custom-modal .close-btn {
+          background: none;
+          border: none;
+          font-size: 28px;
+          cursor: pointer;
+          color: #999;
+          width: 30px;
+          height: 30px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+
+        .custom-modal .close-btn:hover {
+          color: #333;
+        }
+
+        .custom-modal .modal-body {
+          padding: 20px;
+        }
+
+        .custom-modal .form-group {
+          margin-bottom: 15px;
+        }
+
+        .custom-modal .form-group label {
+          display: block;
+          margin-bottom: 5px;
+          font-weight: 600;
+          color: #555;
+        }
+
+        .custom-modal .modal-footer {
+          padding: 15px 20px;
+          border-top: 1px solid #dee2e6;
+          display: flex;
+          justify-content: flex-end;
+          gap: 10px;
+        }
+
+        .custom-modal .btn {
+          padding: 8px 16px;
+          border-radius: 4px;
+          border: none;
+          cursor: pointer;
+          font-weight: 500;
+        }
+
+        .custom-modal .btn-secondary {
+          background: #6c757d;
+          color: white;
+        }
+
+        .custom-modal .btn-secondary:hover {
+          background: #5a6268;
+        }
+
+        .custom-modal .btn-primary {
+          background: #007bff;
+          color: white;
+        }
+
+        .custom-modal .btn-primary:hover {
+          background: #0056b3;
         }
       `}</style>
     </div>
