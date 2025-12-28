@@ -60,10 +60,19 @@ const FormBuilderArea = () => {
   };
 
   const handleBuilderPost = (data: any) => {
-    // ReactFormBuilder'ın kendi save butonu tıklandığında buraya düşer
+    // ReactFormBuilder'dan gelen veriyi sadece state'e kaydet, backend'e gönderme
     const taskData = data.task_data ? data.task_data : data;
     setFormData(taskData);
-    handleSave(data);
+    // Otomatik kaydetme yok, sadece state'i güncelle
+  };
+
+  const handleManualSave = async () => {
+    if (formData.length === 0) {
+      alert('Lütfen önce form elemanı ekleyin!');
+      return;
+    }
+
+    await handleSave({ task_data: formData });
   };
 
   return (
@@ -96,7 +105,14 @@ const FormBuilderArea = () => {
           onClick={() => setShowPreview(true)}
           disabled={formData.length === 0}
         >
-          👁️ Preview & Test {formData.length === 0 && '(Önce form elemanı ekleyin)'}
+          👁️ Preview & Test
+        </button>
+        <button
+          className="save-button"
+          onClick={handleManualSave}
+          disabled={isSaving || formData.length === 0}
+        >
+          {isSaving ? '💾 Kaydediliyor...' : '💾 Kaydet'}
         </button>
       </div>
 
@@ -107,8 +123,8 @@ const FormBuilderArea = () => {
             ℹ️ <strong>Nasıl Kullanılır:</strong><br/>
             1. Sağdaki araç çubuğundan form elemanlarını sol tarafa sürükleyip bırakın<br/>
             2. Elemanlar üzerine tıklayarak özelliklerini düzenleyin<br/>
-            3. Toolbar'daki <strong>Save</strong> butonuna tıklayarak MongoDB'ye kaydedin<br/>
-            4. <strong>Preview & Test</strong> sekmesine geçerek formunuzu test edin
+            3. Yukarıdaki <strong>💾 Kaydet</strong> butonuna tıklayarak MongoDB'ye kaydedin<br/>
+            4. <strong>👁️ Preview & Test</strong> sekmesine geçerek formunuzu test edin
           </p>
           <ReactFormBuilder
             onPost={handleBuilderPost}
