@@ -1,9 +1,18 @@
 'use client';
 
-import { useState } from 'react';
-import { ReactFormBuilder } from 'react-form-builder2';
+import React, { useState } from 'react';
 import axios from 'axios';
+import dynamic from 'next/dynamic';
 import 'react-form-builder2/dist/app.css';
+
+// KRİTİK DÜZELTME: Next.js SSR hatasını önlemek için Dynamic Import
+const ReactFormBuilder = dynamic(
+  () => import('react-form-builder2').then((mod) => mod.ReactFormBuilder),
+  { 
+    ssr: false, // Sunucuda çalıştırma, sadece tarayıcıda çalıştır
+    loading: () => <div className="p-5 text-center">Form Yükleniyor...</div>
+  }
+);
 
 const FormBuilderArea = () => {
   const [formTitle, setFormTitle] = useState('My Form');
@@ -13,24 +22,27 @@ const FormBuilderArea = () => {
     setIsSaving(true);
 
     try {
+      // Form Builder bazen task_data içinde bazen direkt array döner, kontrol edelim
+      const taskData = data.task_data ? data.task_data : data;
+
       const payload = {
         title: formTitle,
-        task_data: data.task_data
+        task_data: taskData
       };
 
       const response = await axios.post('http://localhost:5000/api/forms', payload);
 
-      if (response.data.success) {
-        alert('Form saved successfully!');
-        console.log('Saved form:', response.data.data);
+      // Backend direkt oluşturulan objeyi (ve _id'sini) döner
+      if (response.status === 201 || response.data._id) {
+        alert(`Form başarıyla kaydedildi! ID: ${response.data._id}`);
+        console.log('Saved form:', response.data);
       } else {
-        alert('Failed to save form');
-        console.error('Save failed:', response.data.message);
+        alert('Form kaydedilemedi.');
       }
     } catch (error: any) {
-      const errorMessage = error.response?.data?.message || error.message || 'Unknown error occurred';
-      alert(`Error saving form: ${errorMessage}`);
-      console.error('Error saving form:', error);
+      const errorMessage = error.response?.data?.message || error.message || 'Bilinmeyen bir hata oluştu';
+      alert(`Hata: ${errorMessage}`);
+      console.error('Save error:', error);
     } finally {
       setIsSaving(false);
     }
@@ -56,7 +68,8 @@ const FormBuilderArea = () => {
       <div className="builder-section">
         <ReactFormBuilder
           onPost={handleSave}
-          saveUrl="#"
+          url="" // Boş bırakıyoruz ki eski data çekmeye çalışmasın
+          saveUrl="" 
           saveAlways={false}
         />
       </div>
@@ -79,6 +92,7 @@ const FormBuilderArea = () => {
           padding: 20px;
           background: #f8f9fa;
           border-radius: 8px;
+          border: 1px solid #dee2e6;
         }
 
         .header-section h1 {
@@ -95,6 +109,7 @@ const FormBuilderArea = () => {
         .form-title-input label {
           font-weight: 600;
           color: #555;
+          min-width: 100px;
         }
 
         .form-title-input input {
@@ -109,19 +124,27 @@ const FormBuilderArea = () => {
           background: white;
           border-radius: 8px;
           padding: 20px;
-          box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+          box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+          border: 1px solid #dee2e6;
         }
 
         .saving-indicator {
           position: fixed;
           bottom: 20px;
           right: 20px;
-          background: #007bff;
+          background: #28a745;
           color: white;
           padding: 15px 25px;
           border-radius: 4px;
-          box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+          box-shadow: 0 4px 12px rgba(0,0,0,0.2);
           font-weight: 600;
+          z-index: 1000;
+          animation: slideIn 0.3s ease-out;
+        }
+
+        @keyframes slideIn {
+          from { transform: translateY(100%); opacity: 0; }
+          to { transform: translateY(0); opacity: 1; }
         }
       `}</style>
     </div>
