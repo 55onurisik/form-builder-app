@@ -4,6 +4,7 @@ import "./globals.css";
 import 'bootstrap/dist/css/bootstrap.min.css';
 import 'react-form-builder2/dist/app.css';
 import 'font-awesome/css/font-awesome.min.css';
+import BootstrapClient from '@/components/BootstrapClient';
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -31,6 +32,7 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable}`}
         suppressHydrationWarning
       >
+        <BootstrapClient />
         {children}
       </body>
     </html>

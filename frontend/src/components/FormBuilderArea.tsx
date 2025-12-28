@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import axios from 'axios';
 import dynamic from 'next/dynamic';
 import 'react-form-builder2/dist/app.css';
@@ -29,18 +29,6 @@ const FormBuilderArea = () => {
   const [showPreview, setShowPreview] = useState(false);
   const formBuilderRef = React.useRef<any>(null);
 
-  // Bootstrap JS yükle (modal'lar için gerekli)
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      // jQuery'yi global scope'a ekle
-      const jQuery = require('jquery');
-      (window as any).$ = jQuery;
-      (window as any).jQuery = jQuery;
-
-      // Bootstrap JS'i yükle
-      require('bootstrap/dist/js/bootstrap.bundle.min.js');
-    }
-  }, []);
 
   const handleSave = async (data: any) => {
     setIsSaving(true);
