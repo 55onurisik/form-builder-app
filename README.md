@@ -1,4 +1,24 @@
-# Form Builder Application
+
+## 🛠 Tech Stack
+
+### Frontend
+- **Framework:** Next.js 14 (App Router)
+- **Library:** React 18
+- **Language:** TypeScript
+- **Styling:** CSS Modules / Vanilla CSS
+- **Form Builder:** `react-form-builder2`
+- **HTTP Client:** Axios
+- **Icons:** Lucide React
+
+### Backend
+- **Runtime:** Node.js
+- **Framework:** Express.js
+- **Database:** MongoDB 8.0
+- **ODM:** Mongoose
+
+### DevOps
+- **Containerization:** Docker & Docker Compose
+- **Tooling:** Prettier, ESLint
 
 ## Installation with Docker
 
