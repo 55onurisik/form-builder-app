@@ -73,6 +73,24 @@ const FormBuilderArea = () => {
       let updatedData = [...formData];
       const { _index, ...dataToSave } = editingElement;
 
+      // Auto-generate field_name if empty
+      if (!dataToSave.field_name) {
+        const sourceText = dataToSave.label || dataToSave.content || `field_${Date.now()}`;
+        const slug = sourceText
+          .toLowerCase()
+          .replace(/ğ/g, 'g')
+          .replace(/ü/g, 'u')
+          .replace(/ş/g, 's')
+          .replace(/ı/g, 'i')
+          .replace(/ö/g, 'o')
+          .replace(/ç/g, 'c')
+          .replace(/[^a-z0-9_]/g, '_') // Replace non-alphanumeric with underscore
+          .replace(/_+/g, '_')         // Collapse multiple underscores
+          .replace(/^_|_$/g, '');      // Trim leading/trailing underscores
+
+        dataToSave.field_name = slug;
+      }
+
       updatedData[_index] = dataToSave;
 
       const seen = new Set();
@@ -87,6 +105,7 @@ const FormBuilderArea = () => {
       setRefreshKey(prev => prev + 1);
       setShowEditModal(false);
       setEditingElement(null);
+
     }
   };
 
@@ -271,8 +290,8 @@ const FormBuilderArea = () => {
 
               {/* Label / Text */}
               <div className="form-item">
-                <label>{['Header', 'Paragraph'].includes(editingElement.element) ? 'İçerik Metni' : 'Etiket (Label)'}</label>
-                {['Header', 'Paragraph'].includes(editingElement.element) ? (
+                <label>{['Header', 'Paragraph', 'Label'].includes(editingElement.element) ? 'İçerik Metni' : 'Etiket (Label)'}</label>
+                {['Header', 'Paragraph', 'Label'].includes(editingElement.element) ? (
                   <textarea
                     value={editingElement.content || ''}
                     onChange={(e) => setEditingElement({ ...editingElement, content: e.target.value })}
@@ -288,7 +307,7 @@ const FormBuilderArea = () => {
               </div>
 
               {/* Placeholder */}
-              {!['Header', 'Paragraph', 'LineBreak', 'RadioButtons', 'Checkboxes'].includes(editingElement.element) && (
+              {!['Header', 'Paragraph', 'LineBreak', 'RadioButtons', 'Checkboxes', 'Label'].includes(editingElement.element) && (
                 <div className="form-item">
                   <label>Placeholder (İpucu)</label>
                   <input
