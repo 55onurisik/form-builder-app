@@ -4,13 +4,17 @@ import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, Calendar, FileText, Database } from 'lucide-react';
+import { ArrowLeft, Calendar, FileText, Database, X, Printer, Download } from 'lucide-react';
 
 export default function ViewResponsesPage() {
     const { id } = useParams();
     const [submissions, setSubmissions] = useState<any[]>([]);
     const [formParams, setFormParams] = useState<any>(null);
     const [loading, setLoading] = useState(true);
+
+    // Document View States
+    const [selectedSubmission, setSelectedSubmission] = useState<any>(null);
+    const [showDocumentModal, setShowDocumentModal] = useState(false);
 
     useEffect(() => {
         if (id) {
@@ -40,7 +44,8 @@ export default function ViewResponsesPage() {
         const fields = formParams.task_data.filter((f: any) =>
             excludeElements.indexOf(f.element) === -1
         );
-        return ['Gönderim Tarihi', ...fields.map((f: any) => f.label || f.text || 'Soru')];
+        // Add empty header for Actions column
+        return ['Gönderim Tarihi', ...fields.map((f: any) => f.label || f.text || 'Soru'), 'Islemler'];
     };
 
     const getRowData = (submission: any) => {
@@ -65,21 +70,29 @@ export default function ViewResponsesPage() {
             const answer = submission.data.find((a: any) => a.name === field.field_name || a.id === field.id);
             let val = answer ? answer.value : '-';
 
-            if (field.options && val !== '-') {
-                const findOptionLabel = (v: string) => {
-                    const option = field.options.find((o: any) => o.value === v || o.key === v);
-                    return option ? option.text : v;
-                };
+            // Helper to find label for a value
+            const findOptionLabel = (v: string) => {
+                if (!field.options) return v;
+                const option = field.options.find((o: any) => o.value === v || o.key === v);
+                return option ? option.text : v;
+            };
 
-                if (Array.isArray(val)) {
-                    val = val.map(findOptionLabel).join(', ');
-                } else {
-                    val = findOptionLabel(val);
-                }
+            if (Array.isArray(val)) {
+                // Handle Checkboxes / Multiple Choice
+                val = val.map(findOptionLabel).join(', ');
+            } else if (field.options && val !== '-') {
+                // Handle Radio / Dropdown
+                val = findOptionLabel(val);
             }
+
             row.push(val);
         });
         return row;
+    };
+
+    const handleViewDocument = (submission: any) => {
+        setSelectedSubmission(submission);
+        setShowDocumentModal(true);
     };
 
     const headers = getHeaders();
@@ -123,27 +136,104 @@ export default function ViewResponsesPage() {
                                             <th key={i}>
                                                 <div className="th-content">
                                                     {i === 0 && <Calendar size={14} />}
-                                                    {i > 0 && <FileText size={14} />}
-                                                    {h}
+                                                    {i > 0 && i < headers.length - 1 && <FileText size={14} />}
+                                                    {h === 'Islemler' ? '' : h}
                                                 </div>
                                             </th>
                                         ))}
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {submissions.map((sub: any) => (
-                                        <tr key={sub._id}>
-                                            {getRowData(sub).map((cell: any, i: number) => (
-                                                <td key={i}>{cell}</td>
-                                            ))}
-                                        </tr>
-                                    ))}
+                                    {submissions.map((sub: any) => {
+                                        const rowData = getRowData(sub);
+                                        return (
+                                            <tr key={sub._id}>
+                                                {rowData.map((cell: any, i: number) => (
+                                                    <td key={i}>{cell}</td>
+                                                ))}
+                                                {/* Action Column */}
+                                                <td style={{ width: '80px', textAlign: 'center' }}>
+                                                    <button
+                                                        className="action-btn"
+                                                        onClick={() => handleViewDocument(sub)}
+                                                        title="Belge Olarak Görüntüle"
+                                                    >
+                                                        <FileText size={18} />
+                                                        <span>Belge</span>
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                        );
+                                    })}
                                 </tbody>
                             </table>
                         </div>
                     </div>
                 )}
             </div>
+
+            {/* Document View Modal */}
+            {showDocumentModal && selectedSubmission && formParams && (
+                <div className="doc-modal-overlay" onClick={() => setShowDocumentModal(false)}>
+                    <div className="doc-modal" onClick={e => e.stopPropagation()}>
+                        <div className="doc-header">
+                            <div className="doc-title">
+                                <h2>{formParams.title}</h2>
+                                <span className="doc-date">
+                                    {new Date(selectedSubmission.createdAt).toLocaleDateString('tr-TR', {
+                                        day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit'
+                                    })}
+                                </span>
+                            </div>
+                            <div className="doc-actions">
+                                <button className="icon-btn" onClick={() => window.print()} title="Yazdır">
+                                    <Printer size={20} />
+                                </button>
+                                <button className="icon-btn close" onClick={() => setShowDocumentModal(false)}>
+                                    <X size={20} />
+                                </button>
+                            </div>
+                        </div>
+
+                        <div className="doc-body">
+                            {(() => {
+                                const excludeElements = [
+                                    'Header', 'Paragraph', 'LineBreak', 'Image', 'Label',
+                                    'TwoColumnRow', 'ThreeColumnRow', 'FourColumnRow'
+                                ];
+                                const fields = formParams.task_data.filter((f: any) =>
+                                    excludeElements.indexOf(f.element) === -1
+                                );
+
+                                return fields.map((field: any, idx: number) => {
+                                    const answer = selectedSubmission.data.find((a: any) => a.name === field.field_name || a.id === field.id);
+                                    let val = answer ? answer.value : '-';
+
+                                    // Same formatting logic
+                                    const findOptionLabel = (v: string) => {
+                                        if (!field.options) return v;
+                                        const option = field.options.find((o: any) => o.value === v || o.key === v);
+                                        return option ? option.text : v;
+                                    };
+
+                                    if (Array.isArray(val)) {
+                                        val = val.map(findOptionLabel).join(', ');
+                                    } else if (field.options && val !== '-') {
+                                        val = findOptionLabel(val);
+                                    }
+
+                                    return (
+                                        <div className="doc-item" key={idx}>
+                                            <label>{field.label || field.text || 'Soru'}</label>
+                                            <div className="doc-value">{val}</div>
+                                        </div>
+                                    );
+                                });
+                            })()}
+                        </div>
+                    </div>
+                </div>
+            )}
 
             <style jsx global>{`
                 body {
@@ -248,10 +338,134 @@ export default function ViewResponsesPage() {
                    padding: 15px 20px;
                    border-bottom: 1px solid #f5f5f7;
                    color: #1d1d1f;
+                   vertical-align: middle;
                 }
 
                 .apple-table tr:last-child td { border-bottom: none; }
                 .apple-table tr:hover { background-color: #f5f9ff; }
+
+                .action-btn {
+                    display: flex;
+                    align-items: center;
+                    gap: 6px;
+                    padding: 6px 12px;
+                    background: white;
+                    border: 1px solid #d2d2d7;
+                    border-radius: 12px;
+                    color: #1d1d1f;
+                    font-size: 13px;
+                    font-weight: 500;
+                    cursor: pointer;
+                    transition: all 0.2s;
+                }
+                .action-btn:hover {
+                    background: #f5f5f7;
+                    border-color: #86868b;
+                }
+
+                /* Document Modal */
+                .doc-modal-overlay {
+                    position: fixed;
+                    top: 0; left: 0; right: 0; bottom: 0;
+                    background: rgba(0,0,0,0.4);
+                    backdrop-filter: blur(5px);
+                    display: flex;
+                    justify-content: center;
+                    align-items: center;
+                    z-index: 2000;
+                    animation: fadeIn 0.2s;
+                }
+
+                .doc-modal {
+                    width: 100%;
+                    max-width: 700px;
+                    max-height: 90vh;
+                    background: white;
+                    border-radius: 12px;
+                    box-shadow: 0 20px 50px rgba(0,0,0,0.2);
+                    display: flex;
+                    flex-direction: column;
+                    animation: slideUp 0.3s;
+                    overflow: hidden;
+                }
+
+                .doc-header {
+                    padding: 20px 30px;
+                    border-bottom: 1px solid #f0f0f0;
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: flex-start;
+                    background: #fafafc;
+                }
+
+                .doc-title h2 { margin: 0; font-size: 24px; color: #1d1d1f; }
+                .doc-date { font-size: 14px; color: #86868b; margin-top: 5px; display: block; }
+                
+                .doc-actions { display: flex; gap: 10px; }
+                .icon-btn {
+                    width: 36px; height: 36px;
+                    display: flex; align-items: center; justify-content: center;
+                    border-radius: 50%;
+                    border: 1px solid #e5e5ea;
+                    background: white;
+                    color: #1d1d1f;
+                    cursor: pointer;
+                    transition: all 0.2s;
+                }
+                .icon-btn:hover { background: #f5f5f7; }
+                .icon-btn.close { color: #ff3b30; border-color: #ff3b30; }
+                .icon-btn.close:hover { background: #fff0f0; }
+
+                .doc-body {
+                    padding: 40px;
+                    overflow-y: auto;
+                }
+
+                .doc-item {
+                    margin-bottom: 30px;
+                }
+                .doc-item label {
+                    display: block;
+                    font-size: 13px;
+                    text-transform: uppercase;
+                    letter-spacing: 0.5px;
+                    color: #86868b;
+                    margin-bottom: 8px;
+                    font-weight: 600;
+                }
+                .doc-value {
+                    font-size: 16px;
+                    line-height: 1.5;
+                    color: #1d1d1f;
+                    border-left: 3px solid #0071e3;
+                    padding-left: 15px;
+                }
+
+                /* Print Styles */
+                /* Print Styles */
+                @media print {
+                    .doc-modal-overlay { 
+                        position: absolute; 
+                        top: 0; left: 0;
+                        width: 100%; 
+                        height: auto; 
+                        background: white; 
+                        z-index: 10000;
+                        backdrop-filter: none;
+                        display: block;
+                    }
+                    .doc-modal { 
+                        box-shadow: none; 
+                        max-width: none; 
+                        width: 100%;
+                        max-height: none; 
+                        border: none;
+                        overflow: visible;
+                    }
+                    .doc-body { padding: 0; overflow: visible; }
+                    .doc-actions, .header-glass, .content-wrapper, .back-link { display: none !important; }
+                    body { background: white; overflow: visible; }
+                }
 
                 .loading-state, .empty-state {
                    text-align: center;
@@ -273,6 +487,9 @@ export default function ViewResponsesPage() {
                    color: #d2d2d7;
                    margin-bottom: 15px;
                 }
+                
+                @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+                @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
             `}</style>
         </div>
     );
