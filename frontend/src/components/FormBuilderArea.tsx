@@ -29,6 +29,7 @@ const FormBuilderArea = () => {
   const [showPreview, setShowPreview] = useState(false);
   const [editingElement, setEditingElement] = useState<any>(null);
   const [showEditModal, setShowEditModal] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0);
   const formBuilderRef = React.useRef<any>(null);
 
   // Element'i düzenlemek için modal aç
@@ -44,6 +45,7 @@ const FormBuilderArea = () => {
         item.id === editingElement.id ? editingElement : item
       );
       setFormData(updatedData);
+      setRefreshKey(prev => prev + 1); // ReactFormBuilder'ı yeniden render et
       setShowEditModal(false);
       setEditingElement(null);
     }
@@ -183,6 +185,8 @@ const FormBuilderArea = () => {
           </p>
           <ReactFormBuilder
             onPost={handleBuilderPost}
+            data={formData}
+            key={refreshKey}
           />
         </div>
       )}
