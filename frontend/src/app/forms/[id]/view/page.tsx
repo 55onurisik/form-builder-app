@@ -8,81 +8,93 @@ import { ArrowLeft, CheckCircle } from 'lucide-react';
 import 'react-form-builder2/dist/app.css';
 
 const ReactFormGenerator = dynamic(
-    () => import('react-form-builder2').then((mod) => mod.ReactFormGenerator),
-    { ssr: false }
+  () => import('react-form-builder2').then((mod) => mod.ReactFormGenerator),
+  { ssr: false }
 );
 
+import SuccessModal from '../../../../components/SuccessModal';
+
 export default function ViewFormPage() {
-    const { id } = useParams();
-    const [formData, setFormData] = useState<any[]>([]);
-    const [formTitle, setFormTitle] = useState('Form');
-    const [loading, setLoading] = useState(true);
-    const router = useRouter();
+  const { id } = useParams();
+  const [formData, setFormData] = useState<any[]>([]);
+  const [formTitle, setFormTitle] = useState('Form');
+  const [loading, setLoading] = useState(true);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const router = useRouter();
 
-    useEffect(() => {
-        if (id) {
-            axios.get(`http://localhost:5000/api/forms/${id}`)
-                .then(res => {
-                    if (res.data && res.data.data) {
-                        setFormData(res.data.data.task_data || []);
-                        setFormTitle(res.data.data.title);
-                    }
-                })
-                .catch(err => console.error("Error loading form", err))
-                .finally(() => setLoading(false));
-        }
-    }, [id]);
+  useEffect(() => {
+    if (id) {
+      axios.get(`http://localhost:5000/api/forms/${id}`)
+        .then(res => {
+          if (res.data && res.data.data) {
+            setFormData(res.data.data.task_data || []);
+            setFormTitle(res.data.data.title);
+          }
+        })
+        .catch(err => console.error("Error loading form", err))
+        .finally(() => setLoading(false));
+    }
+  }, [id]);
 
-    const handleSubmit = (data: any) => {
-        axios.post(`http://localhost:5000/api/forms/${id}/submissions`, data)
-            .then(() => {
-                alert('Form başarıyla gönderildi!');
-                router.push('/saved-forms');
-            })
-            .catch(err => {
-                console.error("Submission error", err);
-                alert("Gönderim başarısız.");
-            });
-    };
+  const handleSubmit = (data: any) => {
+    axios.post(`http://localhost:5000/api/forms/${id}/submissions`, data)
+      .then(() => {
+        setShowSuccessModal(true);
+        // Wait for modal to likely close or just give user time to see it
+        setTimeout(() => {
+          router.push('/saved-forms');
+        }, 2000);
+      })
+      .catch(err => {
+        console.error("Submission error", err);
+        alert("Gönderim başarısız.");
+      });
+  };
 
-    if (loading) return (
-        <div className="loading-container">
-            <div className="spinner"></div>
-            <p>Form Yükleniyor...</p>
+  if (loading) return (
+    <div className="loading-container">
+      <div className="spinner"></div>
+      <p>Form Yükleniyor...</p>
+    </div>
+  );
+
+  return (
+    <div className="page-wrapper">
+      {/* Background decoration */}
+      <div className="bg-glow"></div>
+
+      <div className="form-card">
+        <div className="card-header">
+          <button onClick={() => router.back()} className="back-link">
+            <ArrowLeft size={16} /> Geri
+          </button>
+          <h1>{formTitle}</h1>
         </div>
-    );
 
-    return (
-        <div className="page-wrapper">
-            {/* Background decoration */}
-            <div className="bg-glow"></div>
+        <div className="card-body">
+          <ReactFormGenerator
+            data={formData}
+            action_name="Gönder"
+            form_action="/"
+            form_method="POST"
+            onSubmit={handleSubmit}
+            submitButton={
+              <button type="submit" className="submit-btn primary">
+                <CheckCircle size={18} />
+                <span>Formu Gönder</span>
+              </button>
+            }
+          />
+        </div>
+      </div>
 
-            <div className="form-card">
-                <div className="card-header">
-                    <button onClick={() => router.back()} className="back-link">
-                        <ArrowLeft size={16} /> Geri
-                    </button>
-                    <h1>{formTitle}</h1>
-                </div>
+      <SuccessModal
+        isOpen={showSuccessModal}
+        onClose={() => setShowSuccessModal(false)}
+        message="Form başarıyla gönderildi!"
+      />
 
-                <div className="card-body">
-                    <ReactFormGenerator
-                        data={formData}
-                        action_name="Gönder"
-                        form_action="/"
-                        form_method="POST"
-                        onSubmit={handleSubmit}
-                        submitButton={
-                            <button type="submit" className="submit-btn primary">
-                                <CheckCircle size={18} />
-                                <span>Formu Gönder</span>
-                            </button>
-                        }
-                    />
-                </div>
-            </div>
-
-            <style jsx global>{`
+      <style jsx global>{`
         body {
           margin: 0;
           background-color: #f5f5f7;
@@ -181,6 +193,20 @@ export default function ViewFormPage() {
           box-shadow: 0 0 0 4px rgba(0,113,227,0.1);
         }
 
+        /* Fix for Select Dropdowns being cut off */
+        select.form-control {
+          appearance: none;
+          -webkit-appearance: none;
+          -moz-appearance: none;
+          min-height: 48px; /* Taller touch target */
+          background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%230071e3%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E");
+          background-repeat: no-repeat;
+          background-position: right 15px top 50%;
+          background-size: 12px auto;
+          padding-right: 40px; /* Space for arrow */
+          line-height: 1.5;
+        }
+
         .submit-btn {
           width: 100%;
           display: flex;
@@ -225,6 +251,6 @@ export default function ViewFormPage() {
         }
         @keyframes spin { to { transform: rotate(360deg); } }
       `}</style>
-        </div>
-    );
+    </div>
+  );
 }
