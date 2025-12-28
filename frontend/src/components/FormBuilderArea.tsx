@@ -27,6 +27,7 @@ const FormBuilderArea = () => {
   const [isSaving, setIsSaving] = useState(false);
   const [formData, setFormData] = useState<any[]>([]);
   const [showPreview, setShowPreview] = useState(false);
+  const formBuilderRef = React.useRef<any>(null);
 
   const handleSave = async (data: any) => {
     setIsSaving(true);
@@ -58,9 +59,11 @@ const FormBuilderArea = () => {
     }
   };
 
-  const handleFormChange = (data: any) => {
-    // Form her değiştiğinde data'yı sakla
-    setFormData(data);
+  const handleBuilderPost = (data: any) => {
+    // ReactFormBuilder'ın kendi save butonu tıklandığında buraya düşer
+    const taskData = data.task_data ? data.task_data : data;
+    setFormData(taskData);
+    handleSave(data);
   };
 
   return (
@@ -91,27 +94,24 @@ const FormBuilderArea = () => {
         <button
           className={`tab-button ${showPreview ? 'active' : ''}`}
           onClick={() => setShowPreview(true)}
+          disabled={formData.length === 0}
         >
-          👁️ Preview & Test
-        </button>
-        <button
-          className="save-button"
-          onClick={() => handleSave({ task_data: formData })}
-          disabled={isSaving || formData.length === 0}
-        >
-          {isSaving ? '💾 Kaydediliyor...' : '💾 Save Form'}
+          👁️ Preview & Test {formData.length === 0 && '(Önce form elemanı ekleyin)'}
         </button>
       </div>
 
       {/* Builder Section */}
       {!showPreview && (
         <div className="builder-section">
+          <p className="builder-info">
+            ℹ️ <strong>Nasıl Kullanılır:</strong><br/>
+            1. Sağdaki araç çubuğundan form elemanlarını sol tarafa sürükleyip bırakın<br/>
+            2. Elemanlar üzerine tıklayarak özelliklerini düzenleyin<br/>
+            3. Toolbar'daki <strong>Save</strong> butonuna tıklayarak MongoDB'ye kaydedin<br/>
+            4. <strong>Preview & Test</strong> sekmesine geçerek formunuzu test edin
+          </p>
           <ReactFormBuilder
-            onPost={handleSave}
-            onLoad={handleFormChange}
-            onChange={handleFormChange}
-            saveUrl=""
-            saveAlways={false}
+            onPost={handleBuilderPost}
           />
         </div>
       )}
@@ -253,6 +253,15 @@ const FormBuilderArea = () => {
           box-shadow: 0 4px 6px rgba(0,0,0,0.1);
           border: 1px solid #dee2e6;
           min-height: 500px;
+        }
+
+        .builder-info {
+          background: #fff3cd;
+          border-left: 4px solid #ffc107;
+          padding: 12px;
+          margin-bottom: 20px;
+          border-radius: 4px;
+          color: #856404;
         }
 
         .preview-section {
