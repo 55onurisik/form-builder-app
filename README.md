@@ -33,7 +33,6 @@ You can get this project up and running with a single command using Docker.
 1. **Clone the Project:**
    ```bash
    git clone https://github.com/55onurisik/form-builder-app
-   cd form-builder-case
    ```
 
 2. **Start Docker:**
