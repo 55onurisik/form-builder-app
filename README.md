@@ -87,17 +87,22 @@ If you prefer to run the project manually on your local machine, follow these st
     cd frontend
     ```
 
-2.  Install dependencies:
+2.  Copy the example environment file:
+    ```bash
+    cp .env.example .env.local
+    ```
+
+3.  Install dependencies:
     ```bash
     npm install
     ```
 
-3.  Start the development server:
+4.  Start the development server:
     ```bash
     npm run dev
     ```
 
-4.  Access the application at `http://localhost:3000`.
+5.  Access the application at `http://localhost:3000`.
 
 ---
 
