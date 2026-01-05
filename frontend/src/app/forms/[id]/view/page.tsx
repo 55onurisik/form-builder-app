@@ -24,7 +24,7 @@ export default function ViewFormPage() {
 
   useEffect(() => {
     if (id) {
-      axios.get(`http://localhost:5000/api/forms/${id}`)
+      axios.get(`${process.env.NEXT_PUBLIC_API_URL}/api/forms/${id}`)
         .then(res => {
           if (res.data && res.data.data) {
             setFormData(res.data.data.task_data || []);
@@ -37,7 +37,7 @@ export default function ViewFormPage() {
   }, [id]);
 
   const handleSubmit = (data: any) => {
-    axios.post(`http://localhost:5000/api/forms/${id}/submissions`, data)
+    axios.post(`${process.env.NEXT_PUBLIC_API_URL}/api/forms/${id}/submissions`, data)
       .then(() => {
         setShowSuccessModal(true);
         // Wait for modal to likely close or just give user time to see it

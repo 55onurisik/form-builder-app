@@ -19,8 +19,8 @@ export default function ViewResponsesPage() {
     useEffect(() => {
         if (id) {
             Promise.all([
-                axios.get(`http://localhost:5000/api/forms/${id}`),
-                axios.get(`http://localhost:5000/api/forms/${id}/submissions`)
+                axios.get(`${process.env.NEXT_PUBLIC_API_URL}/api/forms/${id}`),
+                axios.get(`${process.env.NEXT_PUBLIC_API_URL}/api/forms/${id}/submissions`)
             ]).then(([formRes, subRes]) => {
                 if (formRes.data && formRes.data.data) {
                     setFormParams(formRes.data.data);

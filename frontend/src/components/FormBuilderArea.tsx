@@ -47,7 +47,7 @@ const FormBuilderArea = () => {
     if (formId) {
       const loadForm = async () => {
         try {
-          const response = await axios.get(`http://localhost:5000/api/forms/${formId}`);
+          const response = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/api/forms/${formId}`);
           if (response.data && response.data.data) {
             const loadedForm = response.data.data;
             setFormTitle(loadedForm.title);
@@ -118,7 +118,7 @@ const FormBuilderArea = () => {
         task_data: taskData
       };
 
-      const response = await axios.post('http://localhost:5000/api/forms', payload);
+      const response = await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/api/forms`, payload);
 
       if (response.status === 201 || response.data.data?._id) {
         setShowSuccessModal(true); // Show Success Modal

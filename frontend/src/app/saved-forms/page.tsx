@@ -17,7 +17,7 @@ export default function SavedFormsPage() {
 
   const fetchForms = async () => {
     try {
-      const response = await axios.get('http://localhost:5000/api/forms');
+      const response = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/api/forms`);
       setForms(response.data.data || []);
     } catch (error) {
       console.error('Error fetching forms:', error);
@@ -31,7 +31,7 @@ export default function SavedFormsPage() {
     if (!confirm('Bu formu silmek istediğinize emin misiniz?')) return;
 
     try {
-      await axios.delete(`http://localhost:5000/api/forms/${id}`);
+      await axios.delete(`${process.env.NEXT_PUBLIC_API_URL}/api/forms/${id}`);
       setForms(forms.filter(f => f._id !== id));
     } catch (error) {
       console.error("Delete error", error);
